@@ -9,9 +9,29 @@ const ctx = () => SillyTavern.getContext();
 const CORNER = `<svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M1 21V7C1 3.7 3.7 1 7 1h14"/><path d="M5 21V10c0-2.8 2.2-5 5-5h11"/><circle cx="9.5" cy="9.5" r="1.4" fill="currentColor"/></svg>`;
 const corners = () => ['tl', 'tr', 'bl', 'br'].map((p) => `<span class="ld-corner ld-corner--${p}">${CORNER}</span>`).join('');
 
+let layer;
 let fab;
 let box;
 let collapsed = false;
+
+/**
+ * Слой размером с экран для кнопки и ложи. Сами они позиционируются внутри него (absolute), а не fixed:
+ * мобильная вёрстка SillyTavern задаёт html transform при нулевой высоте, и fixed-элементы
+ * отсчитываются от невидимого html — уезжают за верх экрана.
+ */
+function ensureLayer() {
+    if (layer?.isConnected) return layer;
+    layer = document.createElement('div');
+    layer.id = 'lara-layer';
+    layer.className = 'lara-layer';
+    document.body.appendChild(layer);
+    return layer;
+}
+
+const layerSize = () => {
+    const r = ensureLayer().getBoundingClientRect();
+    return { w: r.width || innerWidth, h: r.height || innerHeight };
+};
 
 export function isBoxOpen() {
     return Boolean(box && !box.hidden);
@@ -37,9 +57,14 @@ function renderFab() {
     fab.dataset.state = st.key;
     fab.querySelector('.lara-fab__label').textContent = st.word;
     fab.querySelector('button').title = `${t('Ложа режиссёра')} — ${st.text}`;
+    // сохранённое место могло оказаться за экраном (поворот телефона, другое окно) — возвращаем в видимую область
     const pos = s.buttonPos;
-    fab.style.right = `${pos?.right ?? 16}px`;
-    fab.style.bottom = `${pos?.bottom ?? 120}px`;
+    const { w, h } = layerSize();
+    const fw = fab.offsetWidth || 64;
+    const fh = fab.offsetHeight || 64;
+    const clamp = (v, max) => Math.max(4, Math.min(Math.max(4, max), v));
+    fab.style.right = `${clamp(pos?.right ?? 16, w - fw - 4)}px`;
+    fab.style.bottom = `${clamp(pos?.bottom ?? 120, h - fh - 4)}px`;
 }
 
 function tempoBars(tempo) {
@@ -106,7 +131,8 @@ function makeDraggable(el, handle, onTap) {
     handle.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
         const r = el.getBoundingClientRect();
-        start = { x: e.clientX, y: e.clientY, right: innerWidth - r.right, bottom: innerHeight - r.bottom, moved: false };
+        const l = ensureLayer().getBoundingClientRect();
+        start = { x: e.clientX, y: e.clientY, right: l.right - r.right, bottom: l.bottom - r.bottom, moved: false };
         handle.setPointerCapture(e.pointerId);
     });
     handle.addEventListener('pointermove', (e) => {
@@ -115,8 +141,9 @@ function makeDraggable(el, handle, onTap) {
         const dy = e.clientY - start.y;
         if (!start.moved && Math.hypot(dx, dy) < 6) return;
         start.moved = true;
-        const right = Math.max(4, Math.min(innerWidth - el.offsetWidth - 4, start.right - dx));
-        const bottom = Math.max(4, Math.min(innerHeight - el.offsetHeight - 4, start.bottom - dy));
+        const { w, h } = layerSize();
+        const right = Math.max(4, Math.min(w - el.offsetWidth - 4, start.right - dx));
+        const bottom = Math.max(4, Math.min(h - el.offsetHeight - 4, start.bottom - dy));
         el.style.right = `${right}px`;
         el.style.bottom = `${bottom}px`;
     });
@@ -142,7 +169,7 @@ export function mountBox() {
     fab.id = 'lara-fab';
     fab.className = 'ld-root lara-fab';
     fab.innerHTML = `<button type="button" class="lara-fab__btn" aria-label="${t('Открыть ложу режиссёра')}"><img src="${AVATAR}" alt="" draggable="false"></button><span class="lara-fab__label"></span>`;
-    document.body.appendChild(fab);
+    ensureLayer().appendChild(fab);
     makeDraggable(fab, fab.querySelector('button'), () => toggleBox(true));
 
     box = document.createElement('section');
@@ -175,7 +202,7 @@ export function mountBox() {
             </div>
         </div>
         ${corners()}`;
-    document.body.appendChild(box);
+    ensureLayer().appendChild(box);
 
     box.addEventListener('click', (e) => {
         const b = e.target instanceof Element ? e.target.closest('button') : null;
@@ -201,6 +228,7 @@ export function mountBox() {
         renderFab();
         renderBox();
     });
+    window.addEventListener('resize', renderFab);
     renderFab();
 }
 

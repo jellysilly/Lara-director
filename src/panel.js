@@ -8,7 +8,7 @@ import { escapeHtml, intensityHint, intensityLabel, kindLabel, plural, t, talkLa
 import { refreshFab, toggleBox } from './box.js';
 
 const ctx = () => SillyTavern.getContext();
-const VERSION = '0.1.0';
+const VERSION = '0.1.1';
 
 const CORNER = `<svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M1 21V7C1 3.7 3.7 1 7 1h14"/><path d="M5 21V10c0-2.8 2.2-5 5-5h11"/><circle cx="9.5" cy="9.5" r="1.4" fill="currentColor"/></svg>`;
 const LOCK = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="7" width="10" height="7"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>`;

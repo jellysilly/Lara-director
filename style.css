@@ -1050,11 +1050,28 @@
     .lara-note { gap: 10px; }
 }
 
+/* ── Слой поверх приложения: ровно размером с экран ── */
+
+.lara-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 3050;
+    pointer-events: none;
+}
+
+.lara-layer > * {
+    pointer-events: auto;
+}
+
 /* ── Плавающая кнопка ── */
 
 .lara-fab {
-    position: fixed;
-    z-index: 3050;
+    position: absolute;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1120,8 +1137,8 @@
 /* ── Ложа режиссёра ── */
 
 .lara-box {
-    position: fixed;
-    z-index: 3060;
+    position: absolute;
+    z-index: 2;
     right: 24px;
     bottom: 24px;
     width: 380px;
